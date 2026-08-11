@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UUID &amp; Hash Generator // uuid-hash-generator.slippylabs.com</title>
+<meta name="description" content="Generate v4 and time-sortable v7 UUIDs in bulk, and compute SHA-1, SHA-256, SHA-384 and SHA-512 digests of text or a file, all locally.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2234%22%20r%3D%2222%22%20fill%3D%22%231c8a52%22%20stroke%3D%22%2339ff8f%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2216%22%20r%3D%228%22%20fill%3D%22%231c8a52%22%20stroke%3D%22%2339ff8f%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2244%22%20cy%3D%2216%22%20r%3D%228%22%20fill%3D%22%231c8a52%22%20stroke%3D%22%2339ff8f%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E">
+<meta name="theme-color" content="#050b10">
+<link rel="stylesheet" href="style.css?v=5">
+</head>
+<body>
+
+<div class="starfield"></div>
+<div class="scanlines"></div>
+
+<main class="page-wrap">
+  <div class="hud-panel wide">
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <div class="callsign-row">
+      <div class="toad-avatar-wrap">
+        <svg class="toad-avatar" width="46" height="46" viewBox="0 0 64 64">
+          <circle cx="32" cy="34" r="22" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="44" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="3.5" fill="#050b10"/>
+          <circle cx="44" cy="16" r="3.5" fill="#050b10"/>
+          <ellipse cx="24" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <ellipse cx="40" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <circle cx="24" cy="30" r="1.4" fill="#39ff8f"/>
+          <circle cx="40" cy="30" r="1.4" fill="#39ff8f"/>
+          <path d="M22 42 Q32 48 42 42" stroke="#050b10" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div class="lock-reticle"></div>
+      </div>
+      <span class="callsign">Workshop Division // Tool</span>
+      <div class="nav-links">
+        <a href="https://projects.slippylabs.com/" class="logout-link">&larr; Archive</a>
+      </div>
+    </div>
+
+    <h1>UUID &amp; HASH GENERATOR</h1>
+    <p class="subtitle">Generate cryptographically random UUIDs, or take the SHA digest of any text or file. Both run entirely in your browser on the Web Crypto API.</p>
+
+    <div class="filter-bar" id="mode-tabs">
+      <button class="hud-tab active" data-mode="uuid">UUID</button>
+      <button class="hud-tab" data-mode="hash">Hash</button>
+    </div>
+
+    <div id="uuid-panel">
+      <div class="tool-controls">
+        <label class="tool-field-label" for="uuid-version">Version</label>
+        <select class="tool-select" id="uuid-version">
+          <option value="4">v4 — fully random</option>
+          <option value="7">v7 — time-sortable</option>
+        </select>
+        <label class="tool-field-label" for="uuid-count">How many</label>
+        <input class="tool-number-input" id="uuid-count" type="number" min="1" max="100" value="5" style="width:90px">
+        <button class="tool-btn" id="uuid-generate">Generate</button>
+        <button class="tool-btn ghost" id="uuid-copy">Copy All</button>
+        <span class="copy-toast" id="uuid-toast">Copied!</span>
+      </div>
+
+      <div class="tool-checks">
+        <label class="tool-check"><input type="checkbox" id="uuid-upper"> Uppercase</label>
+        <label class="tool-check"><input type="checkbox" id="uuid-braces"> Wrap in braces</label>
+        <label class="tool-check"><input type="checkbox" id="uuid-nodash"> Strip dashes</label>
+      </div>
+
+      <div class="tool-field-row">
+        <span class="tool-field-label">Output</span>
+        <pre class="tool-output" id="uuid-output"></pre>
+      </div>
+
+      <p class="tool-note" id="uuid-note"></p>
+    </div>
+
+    <div id="hash-panel" class="hidden">
+      <div class="tool-field-row">
+        <label class="tool-field-label" for="hash-text">Text to hash</label>
+        <textarea class="tool-textarea" id="hash-text" spellcheck="false" style="min-height:110px" placeholder="Type or paste anything…"></textarea>
+      </div>
+
+      <div class="tool-controls">
+        <label class="tool-field-label" for="hash-file">…or hash a file</label>
+        <input class="tool-file-input" id="hash-file" type="file">
+        <label class="tool-field-label" for="hash-format">Format</label>
+        <select class="tool-select" id="hash-format">
+          <option value="hex">Hex</option>
+          <option value="base64">Base64</option>
+        </select>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-tile"><span class="stat-value" id="hash-source">text</span><span class="stat-label">Source</span></div>
+        <div class="stat-tile"><span class="stat-value" id="hash-bytes">0</span><span class="stat-label">Bytes In</span></div>
+      </div>
+
+      <div class="tool-field-row">
+        <span class="tool-field-label">Digests</span>
+        <ul class="match-list" id="hash-list"></ul>
+      </div>
+
+      <p class="tool-note">SHA-1 is listed because you will still meet it in the wild (git object ids, old certificates), but it is <strong>broken for security purposes</strong> &mdash; practical collisions exist. Use SHA-256 or better for anything that matters. Files are read into memory and never uploaded.</p>
+    </div>
+
+    <div class="comm-window">
+      <div class="comm-portrait">
+        <svg width="36" height="36" viewBox="0 0 64 64">
+          <circle cx="32" cy="34" r="22" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="44" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="3.5" fill="#050b10"/>
+          <circle cx="44" cy="16" r="3.5" fill="#050b10"/>
+          <ellipse cx="24" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <ellipse cx="40" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <circle cx="24" cy="30" r="1.4" fill="#39ff8f"/>
+          <circle cx="40" cy="30" r="1.4" fill="#39ff8f"/>
+          <path d="M22 42 Q32 48 42 42" stroke="#050b10" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="comm-body">
+        <div class="comm-label"><span class="dot"></span> Incoming Transmission &mdash; Slippy</div>
+        <p>"Random enough that you will never see the same one twice. Trust me, I checked."</p>
+      </div>
+    </div>
+
+    <a href="https://projects.slippylabs.com/" class="hud-btn">&larr; Back to Archive</a>
+  </div>
+</main>
+
+<script>
+// ---------- shared ----------
+const modeTabs = document.getElementById('mode-tabs');
+const uuidPanel = document.getElementById('uuid-panel');
+const hashPanel = document.getElementById('hash-panel');
+
+modeTabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('.hud-tab');
+  if (!btn) return;
+  modeTabs.querySelectorAll('.hud-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const mode = btn.dataset.mode;
+  uuidPanel.classList.toggle('hidden', mode !== 'uuid');
+  hashPanel.classList.toggle('hidden', mode !== 'hash');
+});
+
+function bytesToHex(bytes) {
+  let out = '';
+  for (let i = 0; i < bytes.length; i++) out += bytes[i].toString(16).padStart(2, '0');
+  return out;
+}
+
+function bytesToBase64(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+// ---------- UUID ----------
+const uuidOutput = document.getElementById('uuid-output');
+const uuidNote = document.getElementById('uuid-note');
+const uuidToast = document.getElementById('uuid-toast');
+
+const NOTES = {
+  4: 'Version 4 is 122 bits of randomness from crypto.getRandomValues — six bits are spent on the version and variant markers. Unordered by design: two UUIDs generated a second apart sort nowhere near each other.',
+  7: 'Version 7 puts a 48-bit millisecond timestamp in the high bits, so UUIDs sort in creation order — much friendlier to database indexes than v4. Within the same millisecond a 12-bit counter keeps them strictly increasing.',
+};
+
+function formatUuidBytes(bytes) {
+  const hex = bytesToHex(bytes);
+  return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20);
+}
+
+function uuidV4() {
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  b[6] = (b[6] & 0x0f) | 0x40; // version 4
+  b[8] = (b[8] & 0x3f) | 0x80; // RFC 9562 variant
+  return formatUuidBytes(b);
+}
+
+// Monotonic v7: a 12-bit counter in rand_a guarantees strictly increasing values
+// within a single millisecond; on counter overflow we borrow the next millisecond.
+let v7LastMs = 0;
+let v7Counter = 0;
+
+function uuidV7() {
+  let ms = Date.now();
+  if (ms > v7LastMs) {
+    v7LastMs = ms;
+    v7Counter = crypto.getRandomValues(new Uint16Array(1))[0] & 0x0ff; // low start, room to climb
+  } else {
+    v7Counter++;
+    if (v7Counter > 0xfff) { v7LastMs++; v7Counter = 0; }
+    ms = v7LastMs;
+  }
+
+  const b = new Uint8Array(16);
+  // 48-bit big-endian timestamp
+  b[0] = Math.floor(ms / 2 ** 40) & 0xff;
+  b[1] = Math.floor(ms / 2 ** 32) & 0xff;
+  b[2] = Math.floor(ms / 2 ** 24) & 0xff;
+  b[3] = Math.floor(ms / 2 ** 16) & 0xff;
+  b[4] = Math.floor(ms / 2 ** 8) & 0xff;
+  b[5] = ms & 0xff;
+
+  const rand = new Uint8Array(8);
+  crypto.getRandomValues(rand);
+  b.set(rand, 8);
+
+  b[6] = 0x70 | ((v7Counter >> 8) & 0x0f); // version 7 + counter high nibble
+  b[7] = v7Counter & 0xff;                 // counter low byte
+  b[8] = (b[8] & 0x3f) | 0x80;             // variant
+  return formatUuidBytes(b);
+}
+
+function decorate(uuid) {
+  let s = uuid;
+  if (document.getElementById('uuid-nodash').checked) s = s.replace(/-/g, '');
+  if (document.getElementById('uuid-upper').checked) s = s.toUpperCase();
+  if (document.getElementById('uuid-braces').checked) s = '{' + s + '}';
+  return s;
+}
+
+function generateUuids() {
+  const version = document.getElementById('uuid-version').value;
+  const countField = document.getElementById('uuid-count');
+  let count = parseInt(countField.value, 10);
+  if (!Number.isFinite(count)) count = 1;
+  count = Math.min(100, Math.max(1, count));
+  countField.value = count;
+
+  const out = [];
+  for (let i = 0; i < count; i++) out.push(decorate(version === '7' ? uuidV7() : uuidV4()));
+  uuidOutput.textContent = out.join('\n');
+  uuidNote.textContent = NOTES[version];
+}
+
+document.getElementById('uuid-generate').addEventListener('click', generateUuids);
+document.getElementById('uuid-version').addEventListener('change', generateUuids);
+['uuid-upper', 'uuid-braces', 'uuid-nodash'].forEach(id => {
+  document.getElementById(id).addEventListener('change', generateUuids);
+});
+
+document.getElementById('uuid-copy').addEventListener('click', async () => {
+  if (!uuidOutput.textContent) return;
+  try {
+    await navigator.clipboard.writeText(uuidOutput.textContent);
+    uuidToast.classList.add('show');
+    setTimeout(() => uuidToast.classList.remove('show'), 1400);
+  } catch (err) {
+    uuidNote.textContent = 'Could not copy: clipboard access was denied.';
+  }
+});
+
+// ---------- Hash ----------
+const ALGOS = ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512'];
+const hashText = document.getElementById('hash-text');
+const hashFile = document.getElementById('hash-file');
+const hashFormat = document.getElementById('hash-format');
+const hashList = document.getElementById('hash-list');
+const hashSource = document.getElementById('hash-source');
+const hashBytes = document.getElementById('hash-bytes');
+
+let currentBuffer = new Uint8Array(0);
+// Hashing is async, so a slow large-file digest could resolve after a newer
+// text digest. Every request carries a token and stale ones are dropped.
+let hashToken = 0;
+
+async function renderHashes() {
+  const token = ++hashToken;
+  const format = hashFormat.value;
+  hashBytes.textContent = currentBuffer.length.toLocaleString();
+
+  const rows = [];
+  for (const algo of ALGOS) {
+    const digest = new Uint8Array(await crypto.subtle.digest(algo, currentBuffer));
+    if (token !== hashToken) return; // a newer request has taken over
+    rows.push([algo, format === 'hex' ? bytesToHex(digest) : bytesToBase64(digest)]);
+  }
+
+  hashList.textContent = '';
+  for (const [algo, value] of rows) {
+    const li = document.createElement('li');
+    const idx = document.createElement('span');
+    idx.className = 'match-index';
+    idx.textContent = algo;
+    li.appendChild(idx);
+    const span = document.createElement('span');
+    span.style.wordBreak = 'break-all';
+    span.textContent = value;
+    li.appendChild(span);
+    hashList.appendChild(li);
+  }
+}
+
+function useText() {
+  currentBuffer = new TextEncoder().encode(hashText.value);
+  hashSource.textContent = 'text';
+  renderHashes();
+}
+
+hashText.addEventListener('input', () => {
+  hashFile.value = '';
+  useText();
+});
+hashFormat.addEventListener('change', renderHashes);
+
+hashFile.addEventListener('change', async () => {
+  const file = hashFile.files && hashFile.files[0];
+  if (!file) { useText(); return; }
+  const buf = await file.arrayBuffer();
+  currentBuffer = new Uint8Array(buf);
+  hashSource.textContent = 'file';
+  renderHashes();
+});
+
+generateUuids();
+useText();
+</script>
+</body>
+</html>
